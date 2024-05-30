@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title></title>
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --elo-blue: #0D3B66;
+            --elo-green: #33A1FD;
+            --elo-red: #D90429;
+            --elo-gray: #f8f9fa;
+            --elo-dark-gray: #e9ecef;
+        }
+
+        body {
+            background: linear-gradient(to right, var(--elo-blue), var(--elo-green), var(--elo-red));
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0;
+            font-family: Arial, sans-serif;
+        }
+
+        #chat {
+            max-width: 600px;
+            width: 100%;
+            padding: 20px;
+            border: 1px solid var(--elo-dark-gray);
+            border-radius: 10px;
+            background-color: var(--elo-gray);
+            animation: fadeIn 1s ease-in-out;
+        }
+
+        .message {
+            margin: 10px 0;
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        .question {
+            background-color: var(--elo-dark-gray);
+            padding: 15px;
+            border-radius: 10px;
+        }
+
+        .answer {
+            background-color: var(--elo-blue);
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: right;
+        }
+
+        .option-btn {
+            margin: 5px;
+            background-color: var(--elo-green);
+            color: white;
+            border: none;
+        }
+
+        .option-btn:hover {
+            background-color: var(--elo-red);
+        }
+
+        #restart-btn {
+            margin-top: 20px;
+            display: block;
+            text-align: center;
+            background-color: var(--elo-blue);
+            color: white;
+            border: none;
+        }
+
+        #restart-btn:hover {
+            background-color: var(--elo-green);
+        }
+
+        .input-group {
+            margin-top: 10px;
+        }
+
+        .logo {
+            height: 50px;
+            vertical-align: middle;
+            margin-right: 10px;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="chat">
+        <div class="text-center">
+            <img src="https://media.elo.com.br/strapi-hml/principal_brand_bw_desk_66cc99bc42.png" alt="Logo ELO" class="logo">
+            <h3 style="display: inline; color: var(--elo-blue);"></h3>
+        </div>
+        <div id="messages"></div>
+        <button id="restart-btn" class="btn btn-secondary">Reiniciar Conversa</button>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script>
+        const socket = io();
+
+        socket.on('question', (data) => {
+            displayQuestion(data);
+        });
+
+        socket.on('inputQuestion', (data) => {
+            displayInputQuestion(data);
+        });
+
+        socket.on('final', (data) => {
+            displayMessage(data, 'question');
+        });
+
+        function displayQuestion(data) {
+            const chat = document.getElementById('messages');
+            const questionDiv = document.createElement('div');
+            questionDiv.classList.add('message', 'question');
+            questionDiv.textContent = data.question;
+
+            const optionsDiv = document.createElement('div');
+            data.options.forEach(option => {
+                const button = document.createElement('button');
+                button.classList.add('btn', 'option-btn');
+                button.textContent = option;
+                button.onclick = () => sendAnswer(option);
+                optionsDiv.appendChild(button);
+            });
+
+            questionDiv.appendChild(optionsDiv);
+            chat.appendChild(questionDiv);
+        }
+
+        function displayInputQuestion(data) {
+            const chat = document.getElementById('messages');
+            const questionDiv = document.createElement('div');
+            questionDiv.classList.add('message', 'question');
+            questionDiv.textContent = data.question;
+
+            const inputGroup = document.createElement('div');
+            inputGroup.classList.add('input-group');
+
+            const input = document.createElement('input');
+            input.classList.add('form-control');
+            input.setAttribute('list', 'options');
+            input.setAttribute('placeholder', 'Digite sua resposta...');
+
+            const datalist = document.createElement('datalist');
+            datalist.id = 'options';
+            data.options.forEach(option => {
+                const optionElement = document.createElement('option');
+                optionElement.value = option;
+                datalist.appendChild(optionElement);
+            });
+
+            const button = document.createElement('button');
+            button.classList.add('btn', 'option-btn');
+            button.textContent = 'Enviar';
+            button.onclick = () => sendInputAnswer(input.value);
+
+            inputGroup.appendChild(input);
+            inputGroup.appendChild(button);
+            inputGroup.appendChild(datalist);
+
+            questionDiv.appendChild(inputGroup);
+            chat.appendChild(questionDiv);
+        }
+
+        function displayMessage(message, type) {
+            const chat = document.getElementById('messages');
+            const messageDiv = document.createElement('div');
+            messageDiv.classList.add('message', type);
+            messageDiv.textContent = message;
+            chat.appendChild(messageDiv);
+            chat.scrollTop = chat.scrollHeight; // Scroll to the bottom
+        }
+
+        function sendAnswer(answer) {
+            displayMessage(answer, 'answer');
+            socket.emit('nextQuestion', answer);
+        }
+
+        function sendInputAnswer(answer) {
+            if (answer.trim() !== "") {
+                displayMessage(answer, 'answer');
+                socket.emit('inputAnswer', answer);
+            } else {
+                alert("Por favor, digite uma resposta.");
+            }
+        }
+
+        document.getElementById('restart-btn').onclick = () => {
+            document.getElementById('messages').innerHTML = '';
+            socket.emit('restart');
+        };
+    </script>
+</body>
+</html>
