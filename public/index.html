@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title></title>
+    <title>Bot CCE</title>
     <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
     <style>
         :root {
@@ -12,6 +12,7 @@
             --elo-red: #D90429;
             --elo-gray: #f8f9fa;
             --elo-dark-gray: #e9ecef;
+            --elo-yellow: #ffff00;
         }
 
         body {
@@ -31,26 +32,27 @@
             border: 1px solid var(--elo-dark-gray);
             border-radius: 10px;
             background-color: var(--elo-gray);
-            animation: fadeIn 1s ease-in-out;
         }
 
         .message {
             margin: 10px 0;
-            animation: fadeIn 0.5s ease-out;
         }
 
         .question {
             background-color: var(--elo-dark-gray);
             padding: 15px;
-            border-radius: 10px;
+            border-radius: 30px;
+            text-align: left;
+            animation: fadeIn 1s ease-in-out;
         }
 
         .answer {
             background-color: var(--elo-blue);
             color: white;
             padding: 15px;
-            border-radius: 10px;
+            border-radius: 30px;
             text-align: right;
+            animation: fadeIn 1s ease-in-out;
         }
 
         .option-btn {
@@ -137,7 +139,9 @@
                 const button = document.createElement('button');
                 button.classList.add('btn', 'option-btn');
                 button.textContent = option;
-                button.onclick = () => sendAnswer(option);
+                button.onclick = () => {
+                    sendAnswer(option, button);
+                };
                 optionsDiv.appendChild(button);
             });
 
@@ -170,7 +174,9 @@
             const button = document.createElement('button');
             button.classList.add('btn', 'option-btn');
             button.textContent = 'Enviar';
-            button.onclick = () => sendInputAnswer(input.value);
+            button.onclick = () => {
+                sendInputAnswer(input.value, button);
+            };
 
             inputGroup.appendChild(input);
             inputGroup.appendChild(button);
@@ -189,18 +195,30 @@
             chat.scrollTop = chat.scrollHeight; // Scroll to the bottom
         }
 
-        function sendAnswer(answer) {
+        function sendAnswer(answer, button) {
             displayMessage(answer, 'answer');
-            socket.emit('nextQuestion', answer);
+            disableButtons(button);
+            setTimeout(() => {
+                socket.emit('nextQuestion', answer);
+            }, 500);
         }
 
-        function sendInputAnswer(answer) {
+        function sendInputAnswer(answer, button) {
             if (answer.trim() !== "") {
                 displayMessage(answer, 'answer');
-                socket.emit('inputAnswer', answer);
+                disableButtons(button);
+                setTimeout(() => {
+                    socket.emit('inputAnswer', answer);
+                }, 500);
             } else {
                 alert("Por favor, digite uma resposta.");
             }
+        }
+
+        function disableButtons(button) {
+            const parent = button.parentElement;
+            const buttons = parent.querySelectorAll('button');
+            buttons.forEach(btn => btn.disabled = true);
         }
 
         document.getElementById('restart-btn').onclick = () => {
@@ -210,3 +228,4 @@
     </script>
 </body>
 </html>
+
