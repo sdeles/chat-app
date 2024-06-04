@@ -4,7 +4,7 @@ const pool = new Pool({
     user: 'postgres',
     host: 'localhost',
     database: 'decision_tree_db',
-    password: 'yourpassword',  // Altere para sua senha
+    password: 'Doveman@0154',  // Altere para sua senha
     port: 5432,
 });
 
